@@ -1,0 +1,72 @@
+MongoDB lookup return format (post and related user):
+
+Only aggregate:
+    aggregate([
+        {$match: {_id: new ObjectID(id)}},
+        {$lookup: {from: 'users', localField: 'author', foreignField: '_id', as: 'authorDocument'}}
+        ]}
+
+    // Data returned
+    {
+    _id: new ObjectId("650cda7702099616e3d040d7"),
+    title: '2nd post',
+    body: "fixed a typo 'Data' -> 'Date'",
+    createdDate: 2023-09-22T00:06:15.528Z,
+    author: new ObjectId("650680a21c366859637c4f4a"),
+    authorDocument: [
+        {
+        _id: new ObjectId("650680a21c366859637c4f4a"),
+        username: 'bruce',
+        email: 'bruce@bruce.com',
+        password: '$2a$10$sMWcn52AIlMxgfSiYxxOe.ab2SQg3.4hx50C6lADL9RQqLkoHhZyK'
+        }
+    ]
+    }
+
+with project:
+    postCollection.aggregate([
+        {$match: {_id: new ObjectID(id)}},
+        {$lookup: {from: 'users', localField: 'author', foreignField: '_id', as: 'authorDocument'}},
+        {$project: {
+            title: 1,
+            body: 1,
+            createdDate: 1,
+            author: {$arrayElemAt: ['$authorDocument', 0]}
+        }}
+        ]).toArray()
+
+    // Data returned
+    {
+    _id: new ObjectId("650cda7702099616e3d040d7"),
+    title: '2nd post',
+    body: "fixed a typo 'Data' -> 'Date'",
+    createdDate: 2023-09-22T00:06:15.528Z,
+    author: {
+        _id: new ObjectId("650680a21c366859637c4f4a"),
+        username: 'bruce',
+        email: 'bruce@bruce.com',
+        password: '$2a$10$sMWcn52AIlMxgfSiYxxOe.ab2SQg3.4hx50C6lADL9RQqLkoHhZyK'
+    }
+    }
+
+with project and cleanup:
+
+    posts = posts.map(function(post) {
+            post.author = {
+                username: post.author.username,
+                avatar: new User(post.author, true).avatar
+            }
+            return post
+        })
+
+    // Data returned
+    {
+    _id: new ObjectId("650cda7702099616e3d040d7"),
+    title: '2nd post',
+    body: "fixed a typo 'Data' -> 'Date'",
+    createdDate: 2023-09-22T00:06:15.528Z,
+    author: {
+        username: 'bruce',
+        avatar: 'https://gravatar.com/avatar/ede0d18f65d9d466d70a6dae548661a3?s=128'
+    }
+    }
